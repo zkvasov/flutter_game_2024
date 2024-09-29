@@ -45,6 +45,11 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
+    _setEmptyGrid();
+  }
+
+  void _setEmptyGrid() {
     _gridData = List.generate(_gridSize, (_) => List.filled(_gridSize, 0));
 
     // add 2 random value tiles
@@ -137,7 +142,8 @@ class _MyHomePageState extends State<MyHomePage> {
     final randomTile = emptyTiles[random.nextInt(emptyTiles.length)];
 
     // Set value as '2' (90% of the time) or '4' (10% of the time)
-    _gridData[randomTile.x][randomTile.y] = random.nextDouble() < 0.9 ? 2 : 4;
+    _gridData[randomTile.x][randomTile.y] =
+        random.nextDouble() < 0.9 ? 2 : _gridSize;
   }
 
   void _onSwipe(DragEndDetails details) {
@@ -177,7 +183,16 @@ class _MyHomePageState extends State<MyHomePage> {
       _addRandomTile();
     }
 
+    // Check if the game is over
+    if (_isGameOver()) {
+      _showGameOverDialog();
+    }
+
     _startSwipeOffset = Offset.zero;
+  }
+
+  void onSwipeStart(DragStartDetails details) {
+    _startSwipeOffset = details.localPosition;
   }
 
   bool _isGridEqual(List<List<int>> grid1, List<List<int>> grid2) {
@@ -191,8 +206,54 @@ class _MyHomePageState extends State<MyHomePage> {
     return true;
   }
 
-  void onSwipeStart(DragStartDetails details) {
-    _startSwipeOffset = details.localPosition;
+  bool _isGameOver() {
+    // Check if any tile is 0 (empty)
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        if (_gridData[i][j] == 0) return false;
+      }
+    }
+
+    // Check if any adjacent tiles can be merged horizontally
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize - 1; j++) {
+        if (_gridData[i][j] == _gridData[i][j + 1]) return false;
+      }
+    }
+
+    // Check if any adjacent tiles can be merged vertically
+    for (int i = 0; i < _gridSize - 1; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        if (_gridData[i][j] == _gridData[i + 1][j]) return false;
+      }
+    }
+
+    // If no empty tiles and no merges are possible, the game is over
+    return true;
+  }
+
+  void _showGameOverDialog() {
+    // Show a simple game-over dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Game Over"),
+          content: const Text("No more moves are possible."),
+          actions: [
+            TextButton(
+              child: const Text("Restart"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _setEmptyGrid();
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
