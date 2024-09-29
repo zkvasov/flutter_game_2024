@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:math' as math;
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
@@ -183,6 +184,11 @@ class _MyHomePageState extends State<MyHomePage> {
       _addRandomTile();
     }
 
+    // Check if there is a 2048 tile (player wins)
+    if (checkForWin()) {
+      showWinDialog();
+    }
+
     // Check if the game is over
     if (_isGameOver()) {
       _showGameOverDialog();
@@ -236,6 +242,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // Show a simple game-over dialog
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Game Over"),
@@ -248,6 +255,48 @@ class _MyHomePageState extends State<MyHomePage> {
                 setState(() {
                   _setEmptyGrid();
                 });
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool checkForWin() {
+    // Check if any tile is 2048
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        if (_gridData[i][j] == 2048) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  void showWinDialog() {
+    // Show a dialog indicating the player has won
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("You Win!"),
+          content: const Text("You've reached the 2048 tile!"),
+          actions: [
+            TextButton(
+              child: const Text("Keep Playing"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Allow the user to continue playing if they want
+              },
+            ),
+            TextButton(
+              child: const Text("Restart"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _setEmptyGrid();
               },
             ),
           ],
@@ -292,6 +341,8 @@ class _GridTile extends StatelessWidget {
 
   Color _getTileColor(int value) {
     switch (value) {
+      case 0:
+        return Colors.grey;
       case 2:
         return Colors.orange[200]!;
       case 4:
@@ -315,7 +366,7 @@ class _GridTile extends StatelessWidget {
       case 2048:
         return Colors.red[900]!;
       default:
-        return Colors.grey;
+        return Colors.purple;
     }
   }
 
@@ -331,7 +382,7 @@ class _GridTile extends StatelessWidget {
       alignment: Alignment.center,
       child: isEmpty
           ? null
-          : Text(
+          : AutoSizeText(
               value.toString(),
               style: const TextStyle(
                 fontSize: 20,
