@@ -3,7 +3,7 @@ Game 2048
 Simple implementation game logic without any code architecture or UI animations.
 
 Gameplay:
-https://github.com/user-attachments/assets/9f5137ab-60af-4a4d-9a39-da54dc76b79f
+![eugene](https://github.com/user-attachments/assets/9f5137ab-60af-4a4d-9a39-da54dc76b79f)
 
 Win dialog:
 https://github.com/user-attachments/assets/d075d368-8069-4c6f-8ec8-773ca7d6c4cb
