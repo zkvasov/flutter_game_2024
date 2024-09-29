@@ -46,7 +46,9 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _gridData = List.generate(_gridSize, (_) => List.filled(_gridSize, 0));
 
-    _addRandom2Tiles();
+    // add 2 random value tiles
+    _addRandomTile();
+    _addRandomTile();
   }
 
   void _calculateSwipeRight() {
@@ -118,7 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return transposed;
   }
 
-  void _addRandom2Tiles() {
+  void _addRandomTile() {
     List<math.Point<int>> emptyTiles = [];
 
     // Find all empty positions (0 values)
@@ -130,29 +132,11 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
 
-    // add first tile if able
-    final point = _addRandomTileToEmptyGrid(emptyTiles);
+    // Randomly choose an empty position
+    final randomTile = emptyTiles[random.nextInt(emptyTiles.length)];
 
-    // add second tile if able
-    if (point != null) {
-      emptyTiles.remove(point);
-      _addRandomTileToEmptyGrid(emptyTiles);
-    }
-  }
-
-  /// returns position where was added random value
-  /// returns [null] if there no empty position for new random tile
-  math.Point<int>? _addRandomTileToEmptyGrid(List<math.Point<int>> emptyTiles) {
-    if (emptyTiles.isNotEmpty) {
-      // Randomly choose an empty position
-      final randomTile = emptyTiles[random.nextInt(emptyTiles.length)];
-
-      // Set value as '2' (90% of the time) or '4' (10% of the time)
-      _gridData[randomTile.x][randomTile.y] = random.nextDouble() < 0.9 ? 2 : 4;
-      return randomTile;
-    }
-
-    return null;
+    // Set value as '2' (90% of the time) or '4' (10% of the time)
+    _gridData[randomTile.x][randomTile.y] = random.nextDouble() < 0.9 ? 2 : 4;
   }
 
   void _onSwipe(DragEndDetails details) {
@@ -170,25 +154,25 @@ class _MyHomePageState extends State<MyHomePage> {
     if (isHorizontal && dx > step) {
       log('Right');
       _calculateSwipeRight();
-      _addRandom2Tiles();
+      _addRandomTile();
     } else
     // Swiping in left direction.
     if (isHorizontal && dx < -step) {
       log('Left');
       _calculateSwipeLeft();
-      _addRandom2Tiles();
+      _addRandomTile();
     } else
     // Swiping in down direction.
     if (dy > step) {
       log('Down');
       _calculateSwipeDown();
-      _addRandom2Tiles();
+      _addRandomTile();
     } else
     // Swiping in top direction.
     if (dy < -step) {
       log('Up');
       _calculateSwipeUp();
-      _addRandom2Tiles();
+      _addRandomTile();
     }
 
     _startSwipeOffset = Offset.zero;
@@ -232,14 +216,42 @@ class _GridTile extends StatelessWidget {
     required this.value,
   });
 
+  Color _getTileColor(int value) {
+    switch (value) {
+      case 2:
+        return Colors.orange[200]!;
+      case 4:
+        return Colors.orange[300]!;
+      case 8:
+        return Colors.orange[400]!;
+      case 16:
+        return Colors.orange[500]!;
+      case 32:
+        return Colors.orange[600]!;
+      case 64:
+        return Colors.orange[700]!;
+      case 128:
+        return Colors.orange[800]!;
+      case 256:
+        return Colors.orange[900]!;
+      case 512:
+        return Colors.red[700]!;
+      case 1024:
+        return Colors.red[800]!;
+      case 2048:
+        return Colors.red[900]!;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEmpty = value == 0;
     return Container(
       margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        // TODO: random colors for values
-        color: isEmpty ? Colors.grey : Colors.amber,
+        color: _getTileColor(value),
         borderRadius: BorderRadius.circular(16),
       ),
       alignment: Alignment.center,
