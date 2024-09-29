@@ -185,8 +185,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     // Check if there is a 2048 tile (player wins)
-    if (checkForWin()) {
-      showWinDialog();
+    if (_checkForWin()) {
+      _showWinDialog();
     }
 
     // Check if the game is over
@@ -238,8 +238,8 @@ class _MyHomePageState extends State<MyHomePage> {
     return true;
   }
 
+  /// Show a simple game-over dialog
   void _showGameOverDialog() {
-    // Show a simple game-over dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -263,8 +263,8 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  bool checkForWin() {
-    // Check if any tile is 2048
+  /// Check if any tile is 2048
+  bool _checkForWin() {
     for (int i = 0; i < _gridSize; i++) {
       for (int j = 0; j < _gridSize; j++) {
         if (_gridData[i][j] == 2048) {
@@ -275,8 +275,8 @@ class _MyHomePageState extends State<MyHomePage> {
     return false;
   }
 
-  void showWinDialog() {
-    // Show a dialog indicating the player has won
+  /// Show a dialog indicating the player has won
+  void _showWinDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -305,11 +305,41 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  void _showRestartDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Restart"),
+          content: const Text("Are you sure you want to restart the game?"),
+          actions: [
+            TextButton(
+              child: const Text("Restart"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _setEmptyGrid();
+                });
+              },
+            ),
+            TextButton(
+              child: const Text("Continue"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        centerTitle: true,
         title: Text(widget.title),
       ),
       body: GestureDetector(
@@ -326,6 +356,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 );
               },
             ).toList()),
+      ),
+      floatingActionButton: ElevatedButton(
+        onPressed: _showRestartDialog,
+        child: const Text('Restart'),
       ),
     );
   }
