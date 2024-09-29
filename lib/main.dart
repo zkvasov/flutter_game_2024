@@ -14,12 +14,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: '2048'),
     );
   }
 }
@@ -145,37 +146,49 @@ class _MyHomePageState extends State<MyHomePage> {
     const step = 10;
     final dx = details.velocity.pixelsPerSecond.dx - _startSwipeOffset.dx;
     final dy = details.velocity.pixelsPerSecond.dy - _startSwipeOffset.dy;
-
-    // log('dx: $dx, dy: $dy');
-
     final isHorizontal = dx.abs() > dy.abs();
+
+    // Create a copy of the current grid
+    final previousGrid = _gridData.map((row) => List<int>.from(row)).toList();
 
     // Swiping in right direction.
     if (isHorizontal && dx > step) {
       log('Right');
       _calculateSwipeRight();
-      _addRandomTile();
     } else
     // Swiping in left direction.
     if (isHorizontal && dx < -step) {
       log('Left');
       _calculateSwipeLeft();
-      _addRandomTile();
     } else
     // Swiping in down direction.
     if (dy > step) {
       log('Down');
       _calculateSwipeDown();
-      _addRandomTile();
     } else
     // Swiping in top direction.
     if (dy < -step) {
       log('Up');
       _calculateSwipeUp();
+    }
+
+    // Check if the grid has changed
+    if (!_isGridEqual(previousGrid, _gridData)) {
       _addRandomTile();
     }
 
     _startSwipeOffset = Offset.zero;
+  }
+
+  bool _isGridEqual(List<List<int>> grid1, List<List<int>> grid2) {
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        if (grid1[i][j] != grid2[i][j]) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   void onSwipeStart(DragStartDetails details) {
