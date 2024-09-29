@@ -1,6 +1,7 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:developer';
+import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -32,138 +33,169 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late Map<int, int> _gridData;
+  static const _gridSize = 4;
 
-  late final List<int> _horizontalLastKeys;
+  final math.Random random = math.Random();
+  late List<List<int>> _gridData;
+
+  // Track swipe movement
+  Offset _startSwipeOffset = Offset.zero;
 
   @override
   void initState() {
     super.initState();
-    _gridData = Map.fromIterables(
-      List.generate(
-        16,
-        (index) => index,
-      ),
-      List.generate(
-        16,
-        (index) => 0,
-      ),
-    );
+    _gridData = List.generate(_gridSize, (_) => List.filled(_gridSize, 0));
 
-// TODO: randomize
-    // init random 2 values
-    _gridData[1] = 2;
-    _gridData[3] = 2;
-
-    _horizontalLastKeys = _gridData.keys.where(
-      (element) {
-        return (element + 1) % 4 == 0;
-      },
-    ).toList();
+    _addRandom2Tiles();
   }
 
-  void _onSwipe(DragUpdateDetails details) {
-    const step = 150;
-    final dx = details.delta.dx;
-    final dy = details.delta.dy;
+  void _calculateSwipeRight() {
+    setState(() {
+      for (int i = 0; i < _gridSize; i++) {
+        _gridData[i] = _merge(_gridData[i].reversed.toList()).reversed.toList();
+      }
+    });
+  }
 
-    log('dx: $dx, dy: $dy');
+  void _calculateSwipeLeft() {
+    setState(() {
+      for (int i = 0; i < _gridSize; i++) {
+        _gridData[i] = _merge(_gridData[i]);
+      }
+    });
+  }
+
+  void _calculateSwipeUp() {
+    setState(() {
+      _gridData = _transpose(_gridData);
+      _calculateSwipeLeft();
+      _gridData = _transpose(_gridData);
+    });
+  }
+
+  void _calculateSwipeDown() {
+    setState(() {
+      _gridData = _transpose(_gridData);
+      _calculateSwipeRight();
+      _gridData = _transpose(_gridData);
+    });
+  }
+
+  List<int> _merge(List<int> row) {
+    // First, remove all zeros
+    row = row.where((x) => x != 0).toList();
+
+    // Merge adjacent equal numbers
+    for (int i = 0; i < row.length - 1; i++) {
+      if (row[i] == row[i + 1]) {
+        row[i] *= 2;
+        row[i + 1] = 0;
+      }
+    }
+
+    // Remove zeros again after merge
+    row = row.where((x) => x != 0).toList();
+
+    // Add zeros to the right to make the row size 4 again
+    while (row.length < _gridSize) {
+      row.add(0);
+    }
+
+    return row;
+  }
+
+  /// swaps rows and columns
+  List<List<int>> _transpose(List<List<int>> matrix) {
+    List<List<int>> transposed = List.generate(
+      _gridSize,
+      (_) => List.filled(_gridSize, 0),
+    );
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        transposed[i][j] = matrix[j][i];
+      }
+    }
+    return transposed;
+  }
+
+  void _addRandom2Tiles() {
+    List<math.Point<int>> emptyTiles = [];
+
+    // Find all empty positions (0 values)
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        if (_gridData[i][j] == 0) {
+          emptyTiles.add(math.Point(i, j));
+        }
+      }
+    }
+
+    // add first tile if able
+    final point = _addRandomTileToEmptyGrid(emptyTiles);
+
+    // add second tile if able
+    if (point != null) {
+      emptyTiles.remove(point);
+      _addRandomTileToEmptyGrid(emptyTiles);
+    }
+  }
+
+  /// returns position where was added random value
+  /// returns [null] if there no empty position for new random tile
+  math.Point<int>? _addRandomTileToEmptyGrid(List<math.Point<int>> emptyTiles) {
+    if (emptyTiles.isNotEmpty) {
+      // Randomly choose an empty position
+      final randomTile = emptyTiles[random.nextInt(emptyTiles.length)];
+
+      // Set value as '2' (90% of the time) or '4' (10% of the time)
+      _gridData[randomTile.x][randomTile.y] = random.nextDouble() < 0.9 ? 2 : 4;
+      return randomTile;
+    }
+
+    return null;
+  }
+
+  void _onSwipe(DragEndDetails details) {
+    if (_startSwipeOffset != Offset.zero) return;
+
+    const step = 10;
+    final dx = details.velocity.pixelsPerSecond.dx - _startSwipeOffset.dx;
+    final dy = details.velocity.pixelsPerSecond.dy - _startSwipeOffset.dy;
+
+    // log('dx: $dx, dy: $dy');
 
     final isHorizontal = dx.abs() > dy.abs();
 
     // Swiping in right direction.
     if (isHorizontal && dx > step) {
       log('Right');
-      _calculateHorizontalRightSwipe();
-      return;
-    }
-
+      _calculateSwipeRight();
+      _addRandom2Tiles();
+    } else
     // Swiping in left direction.
     if (isHorizontal && dx < -step) {
       log('Left');
-      return;
-    }
-
+      _calculateSwipeLeft();
+      _addRandom2Tiles();
+    } else
     // Swiping in down direction.
     if (dy > step) {
       log('Down');
-      return;
-    }
-
+      _calculateSwipeDown();
+      _addRandom2Tiles();
+    } else
     // Swiping in top direction.
     if (dy < -step) {
-      log('Top');
-      return;
+      log('Up');
+      _calculateSwipeUp();
+      _addRandom2Tiles();
     }
+
+    _startSwipeOffset = Offset.zero;
   }
 
-  void _calculateHorizontalRightSwipe() {
-    for (var i = 0; i < _horizontalLastKeys.length - 1; i++) {
-      final lastHorizontalIndex = _horizontalLastKeys[i];
-
-      final indexSublist = List.generate(
-        4,
-        (index) => lastHorizontalIndex - index,
-      );
-
-      final sublist = _calculateFromLast(indexSublist
-          .map(
-            (index) => _gridData[index] ?? 0,
-          )
-          .toList());
-
-      for (var j = 0; j < indexSublist.length; j++) {
-        final index = indexSublist[j];
-        _gridData[index] = sublist[j];
-      }
-
-      log('calculation');
-
-      setState(() {});
-
-      // final lastHorizontalValue = _gridData[lastHorizontalIndex];
-      // final List<int> emptyPositions = [];
-      // for (var j = lastHorizontalIndex; j < lastHorizontalIndex - 3; j--) {
-      //   final value = _gridData[j];
-      //   if (value == null || value == 0) {
-      //     emptyPositions.add(j);
-      //   }
-      // }
-    }
-  }
-
-  // 0 2 0 2 -> 0 0 0 4
-  // 2 0 0 2 -> 0 0 0 4
-  // 2 4 0 2 -> 0 2 4 2
-  // 2 4 0 0 -> 0 2 4 0 -> 0 0 2 4
-
-// TODO: 2 2 2 2
-  List<int> _calculateFromLast(List<int> values) {
-    final newValues = List<int>.from(values.where(
-      (val) => val != 0,
-    ));
-    if (newValues.isEmpty) return [0, 0, 0, 0];
-
-    if (newValues.length == 1) return [0, 0, 0, newValues.first];
-
-    for (var i = newValues.length - 1; i > 0; i--) {
-      final val = newValues[i];
-      final previous = newValues[i - 1];
-      if (val == previous) {
-        newValues[i] = val * 2;
-        newValues.removeAt(i - 1);
-        i--;
-        break;
-      }
-    }
-
-    final length = newValues.length;
-    final missedItemsLenght = 4 - length;
-    for (var i = 0; i < missedItemsLenght; i++) {
-      newValues.insert(0, 0);
-    }
-
-    return newValues;
+  void onSwipeStart(DragStartDetails details) {
+    _startSwipeOffset = details.localPosition;
   }
 
   @override
@@ -173,31 +205,20 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: GridView.count(
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 4,
-                children: _gridData.entries.map(
-                  (e) {
-                    return _GridTile(
-                      key: ValueKey(e.key.toString() + e.value.toString()),
-                      value: e.value,
-                    );
-                  },
-                ).toList()),
-          ),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onPanUpdate: _onSwipe,
-            child: Container(
-              color: Colors.green,
-              height: 400,
-              width: 400,
-            ),
-          )
-        ],
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanEnd: _onSwipe,
+        onPanStart: (details) {},
+        child: GridView.count(
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: _gridSize,
+            children: _gridData.expand((n) => n).mapIndexed(
+              (index, item) {
+                return _GridTile(
+                  value: item,
+                );
+              },
+            ).toList()),
       ),
     );
   }
